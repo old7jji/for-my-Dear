@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+  <meta charset="UTF-8">
+  <title>Arabic Poem Particle Animation</title>
+  <style>
+    body {
+      margin: 0;
+      overflow: hidden;
+      background-color: #0b0612;
+    }
+    canvas {
+      display: block;
+    }
+  </style>
+</head>
+<body>
+
+<canvas id="particleCanvas"></canvas>
+
+<script>
+  const canvas = document.getElementById('particleCanvas');
+  const ctx = canvas.getContext('2d');
+
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+
+  const config = {
+      count: 1800,
+      size: 3.0,
+      speed: 0.015
+  };
+
+  let particles = [];
+  let progress = 0;
+
+   function drawParticle(ctx, x, y, size, type) {
+      ctx.beginPath();
+      if (type === 'star') {
+          for (let i = 0; i < 4; i++) {
+              let angle = (i * Math.PI) / 2;
+              let dx = size * Math.cos(angle);
+              let dy = size * Math.sin(angle);
+              ctx.moveTo(x - dx, y - dy);
+              ctx.lineTo(x + dx, y + dy);
+          }
+          ctx.strokeStyle = "#FFD700";
+          ctx.lineWidth = 1.2;
+          ctx.stroke();
+      } else if (type === 'heart') {
+          ctx.fillStyle = "#FFC107";          ctx.moveTo(x, y);
+          ctx.bezierCurveTo(x - size, y - size, x - size * 1.5, y + size / 3, x, y + size);
+          ctx.bezierCurveTo(x + size * 1.5, y + size / 3, x + size, y - size, x, y);
+          ctx.fill();
+      }
+  }
+  function updateTargets() {
+      particles = [];
+      progress = 0;
+
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = "white";
+      
+      let fontSize = Math.min(canvas.width / 15, 65);
+      ctx.font = `bold ${fontSize}px Tahoma, Arial, sans-serif`;
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      
+      const text = "وَمَا كانَ قَلْبِي لِغَيْرِكِ أنْ يَمِيلا";
+      ctx.fillText(text, canvas.width / 2, canvas.height / 2);
+
+      let imgData = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      let validTargets = [];
+      let step = 3;
+
+      for (let y = 0; y < canvas.height; y += step) {
+          for (let x = 0; x < canvas.width; x += step) {
+              let index = (y * canvas.width + x) * 4;
+              if (imgData[index + 3] > 128) {
+                  validTargets.push({ x: x, y: y });
+              }
+          }
+      }
+
+      if (validTargets.length === 0) return;
+
+      for (let i = 0; i < config.count; i++) {
+          let target = validTargets[i % validTargets.length];
+          let spread = Math.random() * 5;
+          let angle = Math.random() * Math.PI * 2;
+
+          particles.push({
+              sx: (Math.random() - 0.5) * canvas.width,
+              sy: (Math.random() - 0.5) * canvas.height,
+              tx: target.x + spread * Math.cos(angle) - canvas.width / 2,
+              ty: target.y + spread * Math.sin(angle) - canvas.height / 2,
+              size: Math.random() * 2 + 1.2,
+              type: Math.random() > 0.4 ? 'star' : 'heart'
+          });
+      }
+  }
+
+  function animate() {
+      ctx.fillStyle = "rgba(11, 6, 18, 0.25)";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      if (progress < 1) progress += config.speed;
+      let eased = Math.sin((progress * Math.PI) / 2);
+      for (let p of particles) {
+          let cx = canvas.width / 2 + p.sx + (p.tx - p.sx) * eased;
+          let cy = canvas.height / 2 + p.sy + (p.ty - p.sy) * eased;
+
+          drawParticle(ctx, cx, cy, p.size, p.type);
+      }
+
+      requestAnimationFrame(animate);
+  }
+
+  updateTargets();
+  animate();
+
+  window.addEventListener('resize', () => {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+      updateTargets();
+  });
+</script>
+
+</body>
+</html>
